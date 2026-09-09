@@ -112,6 +112,3 @@ go test ./tokenizer -run '^$' -fuzz FuzzTokenizer -fuzztime 1m
 ```sh
 go test ./scanner -run Corpus -v      # 페이지마다 서브테스트로 갈라진다
 ```
-
-규칙을 고쳐 총 발견 수가 바뀌면 테스트가 실패한다. **의도한 변경이면 표를 갱신하고,
-아니라면 방금 오탐을 만든 것이다.**
