@@ -56,6 +56,8 @@ func newRules() []Rule {
 		ruleFunc(ruleIframeSandboxEscape),
 		ruleFunc(ruleFormActionIP),
 		ruleFunc(ruleDataURIDocument),
+		ruleFunc(ruleDangerousDownload),
+		ruleFunc(ruleResourceIPLiteral),
 	}
 }
 
