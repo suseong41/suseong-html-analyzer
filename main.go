@@ -65,6 +65,10 @@ func run() int {
 	}
 	fmt.Fprintf(os.Stderr, "\n%s - 발견 %d건\n", path, len(findings))
 
+	for _, n := range res.Notes {
+		fmt.Fprintf(os.Stderr, "참고: %s\n", n)
+	}
+
 	if len(findings) == 0 {
 		return 0
 	}

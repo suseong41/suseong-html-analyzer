@@ -86,6 +86,7 @@ type Finding struct {
 
 type Result struct {
 	Findings []Finding
+	Notes    []string
 	Tokens   map[tokenizer.TokenType]int
 	Tags     map[string]int
 }
@@ -96,6 +97,7 @@ func ScanURL(src, pageURL string) Result {
 	z := tokenizer.New(src)
 	ctx := &Context{URL: pageURL, Scheme: schemeOf(pageURL), Domain: domainOf(pageURL)}
 	rules := newRules()
+	var cov coverage
 
 	res := Result{
 		Tokens: map[tokenizer.TokenType]int{},
@@ -117,6 +119,8 @@ func ScanURL(src, pageURL string) Result {
 			ctx.stack.end(tok.Name)
 		}
 
+		cov.observe(ctx, tok)
+
 		for _, r := range rules {
 			res.Findings = append(res.Findings, r.Check(ctx, tok)...)
 		}
@@ -131,6 +135,9 @@ func ScanURL(src, pageURL string) Result {
 	for i := range res.Findings {
 		res.Findings[i].Line, res.Findings[i].Col = z.Position(res.Findings[i].Offset)
 	}
+
+	res.Notes = cov.notes()
+
 	return res
 }
 
