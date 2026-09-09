@@ -58,6 +58,8 @@ func newRules() []Rule {
 		ruleFunc(ruleDataURIDocument),
 		ruleFunc(ruleDangerousDownload),
 		ruleFunc(ruleResourceIPLiteral),
+		ruleFunc(ruleClearTextCredentials),
+		ruleFunc(ruleWeakPasswordField),
 	}
 }
 

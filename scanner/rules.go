@@ -119,13 +119,7 @@ func ruleZeroWidth(ctx *Context, tok tokenizer.Token) []Finding {
 // -- 외부 도메인으로 가는 비밀번호 폼 (H103) ----
 
 func ruleCrossOriginPasswordForm(ctx *Context, tok tokenizer.Token) []Finding {
-	if tok.Type != tokenizer.StartTagToken || tok.Name != "input" {
-		return nil
-	}
-	if v, ok := tok.Attr("type"); !ok || !strings.EqualFold(strings.TrimSpace(v), "password") {
-		return nil
-	}
-	form, ok := ctx.OpenForm()
+	form, ok := credentialForm(ctx, tok)
 	if !ok || ctx.Domain == "" {
 		return nil
 	}
