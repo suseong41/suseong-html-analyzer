@@ -23,13 +23,20 @@ WHATWG 토크나이저(브라우저와 동일하게 해석)를 만들고, 그 �
   | HIGH | `webshell-signature` | 스크립트 내 웹셸 시그니처 (c99, ByroeNet 등) |
   | HIGH | `exfil-channel` | 스크립트·폼이 외부 메시징 API로 전송 (Telegram·Discord 등) |
   | HIGH | `cross-origin-password-form` | 비밀번호 폼이 외부 도메인으로 전송 |
+  | HIGH | `meta-refresh-scheme` | `meta refresh` 가 `data:`/`javascript:` 로 이동 |
+  | HIGH | `base-href-external` | `<base href>` 가 외부 도메인 — 모든 상대 URL이 그쪽으로 |
+  | HIGH | `form-action-ip` | 폼이 IP 주소로 직접 전송 |
+  | HIGH | `data-uri-document` | 실행 가능한 `data:` URI 를 iframe/object/script 에 삽입 |
   | MEDIUM | `javascript-url` | `javascript:` URL (문자 참조 우회 포함) |
   | MEDIUM | `sri-missing` | 외부 리소스에 `integrity` 없음 |
   | MEDIUM | `mixed-content` | HTTPS 페이지의 `http://` 하위 리소스 |
   | MEDIUM | `obfuscated-eval` | `eval()` + 디코더(`atob` 등) 조합 |
+  | MEDIUM | `iframe-sandbox-escape` | `allow-scripts` 와 `allow-same-origin` 동시 허용 |
   | LOW | `inline-handler` | 인라인 이벤트 핸들러 (`onclick` 등) |
   | LOW | `zero-width` | 제로폭 문자 난독화 |
   | INFO | `target-blank-no-rel` | `target=_blank` 에 `rel=noopener` 없음 |
+
+
 
 ---
 
@@ -54,6 +61,9 @@ go build .
 ```
 page.html:12:8: HIGH   [exfil-channel] action=https://api.telegram.org/...
 ```
+발견과 별개로 **분석의 한계**를 stderr 에 보고한다.
+SPA 셸처럼 내용을 스크립트가 그리는 페이지가 그렇다.
+이것은 위험이 아니라 **우리가 보지 못한 것**이므로 종료 코드에 영향을 주지 않는다.
 
 **종료 코드** — `0` 발견 없음 · `1` 발견 있음 · `2` 사용법/입출력 오류.
 CI에서 `-min high` 로 걸어 실패시킬 수 있다.
