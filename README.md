@@ -18,20 +18,26 @@ WHATWG 토크나이저(브라우저와 동일하게 해석)를 만들고, 그 �
   script escaped state, 열린 요소 스택까지 브라우저와 동일하게 처리
 * **탐지 규칙 10종** (심각도별)
 
-| 심각도 | 분류 | 규칙 | 내용 |
+  | 심각도 | 분류 | 규칙 | 내용 |
   |---|---|---|---|
-  | HIGH | exfiltration | `exfil-channel` | 스크립트·폼이 외부 메시징 API로 전송 |
+  | HIGH | exfiltration | `cleartext-credentials` | 비밀번호가 평문(http)으로 전송 |
   | HIGH | exfiltration | `cross-origin-password-form` | 비밀번호 폼이 외부 도메인으로 전송 |
   | HIGH | exfiltration | `form-action-ip` | 폼이 IP 주소로 직접 전송 |
-  | HIGH | execution | `webshell-signature` | 스크립트 내 웹셸 시그니처 (c99, ByroeNet 등) |
+  | HIGH | exfiltration | `exfil-channel` | 스크립트·폼이 외부 메시징 API로 전송 |
+  | HIGH | exfiltration | `phishing-interstitial` | CDN이 대상을 피싱으로 분류 (제3자 판정) |
+  | HIGH | execution | `webshell-signature` | 스크립트 내 웹셸 시그니처 |
   | HIGH | execution | `meta-refresh-scheme` | `meta refresh` 가 `data:`/`javascript:` 로 이동 |
   | HIGH | execution | `data-uri-document` | 실행 가능한 `data:` URI 를 iframe/object/script 에 삽입 |
   | HIGH | origin | `base-href-external` | `<base href>` 가 외부 도메인 — 모든 상대 URL이 그쪽으로 |
   | MEDIUM | execution | `javascript-url` | `javascript:` URL (문자 참조 우회 포함) |
+  | MEDIUM | execution | `dangerous-download` | `.hta`·`.scr`·`.vbs` 등으로 연결되는 링크 |
   | MEDIUM | origin | `iframe-sandbox-escape` | `allow-scripts` 와 `allow-same-origin` 동시 허용 |
   | MEDIUM | supply-chain | `sri-missing` | 외부 리소스에 `integrity` 없음 |
   | MEDIUM | supply-chain | `mixed-content` | HTTPS 페이지의 `http://` 하위 리소스 |
+  | MEDIUM | supply-chain | `resource-ip-literal` | 하위 리소스를 IP 주소에서 로드 |
   | MEDIUM | evasion | `obfuscated-eval` | `eval()` + 디코더(`atob` 등) 조합 |
+  | MEDIUM | hardening | `weak-password-field` | 이름은 비밀번호인데 `type` 이 `password` 가 아님 |
+  | MEDIUM | hardening | `local-credential-post` | 비밀번호 폼이 `localhost`·`127.0.0.1` 로 전송 |
   | LOW | evasion | `zero-width` | 제로폭 문자 난독화 |
   | LOW | hardening | `inline-handler` | 인라인 이벤트 핸들러 (`onclick` 등) |
   | INFO | hardening | `target-blank-no-rel` | `target=_blank` 에 `rel=noopener` 없음 |
