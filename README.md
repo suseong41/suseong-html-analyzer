@@ -18,23 +18,23 @@ WHATWG 토크나이저(브라우저와 동일하게 해석)를 만들고, 그 �
   script escaped state, 열린 요소 스택까지 브라우저와 동일하게 처리
 * **탐지 규칙 10종** (심각도별)
 
-  | 심각도 | 규칙 | 내용 |
-  |---|---|---|
-  | HIGH | `webshell-signature` | 스크립트 내 웹셸 시그니처 (c99, ByroeNet 등) |
-  | HIGH | `exfil-channel` | 스크립트·폼이 외부 메시징 API로 전송 (Telegram·Discord 등) |
-  | HIGH | `cross-origin-password-form` | 비밀번호 폼이 외부 도메인으로 전송 |
-  | HIGH | `meta-refresh-scheme` | `meta refresh` 가 `data:`/`javascript:` 로 이동 |
-  | HIGH | `base-href-external` | `<base href>` 가 외부 도메인 — 모든 상대 URL이 그쪽으로 |
-  | HIGH | `form-action-ip` | 폼이 IP 주소로 직접 전송 |
-  | HIGH | `data-uri-document` | 실행 가능한 `data:` URI 를 iframe/object/script 에 삽입 |
-  | MEDIUM | `javascript-url` | `javascript:` URL (문자 참조 우회 포함) |
-  | MEDIUM | `sri-missing` | 외부 리소스에 `integrity` 없음 |
-  | MEDIUM | `mixed-content` | HTTPS 페이지의 `http://` 하위 리소스 |
-  | MEDIUM | `obfuscated-eval` | `eval()` + 디코더(`atob` 등) 조합 |
-  | MEDIUM | `iframe-sandbox-escape` | `allow-scripts` 와 `allow-same-origin` 동시 허용 |
-  | LOW | `inline-handler` | 인라인 이벤트 핸들러 (`onclick` 등) |
-  | LOW | `zero-width` | 제로폭 문자 난독화 |
-  | INFO | `target-blank-no-rel` | `target=_blank` 에 `rel=noopener` 없음 |
+| 심각도 | 분류 | 규칙 | 내용 |
+  |---|---|---|---|
+  | HIGH | exfiltration | `exfil-channel` | 스크립트·폼이 외부 메시징 API로 전송 |
+  | HIGH | exfiltration | `cross-origin-password-form` | 비밀번호 폼이 외부 도메인으로 전송 |
+  | HIGH | exfiltration | `form-action-ip` | 폼이 IP 주소로 직접 전송 |
+  | HIGH | execution | `webshell-signature` | 스크립트 내 웹셸 시그니처 (c99, ByroeNet 등) |
+  | HIGH | execution | `meta-refresh-scheme` | `meta refresh` 가 `data:`/`javascript:` 로 이동 |
+  | HIGH | execution | `data-uri-document` | 실행 가능한 `data:` URI 를 iframe/object/script 에 삽입 |
+  | HIGH | origin | `base-href-external` | `<base href>` 가 외부 도메인 — 모든 상대 URL이 그쪽으로 |
+  | MEDIUM | execution | `javascript-url` | `javascript:` URL (문자 참조 우회 포함) |
+  | MEDIUM | origin | `iframe-sandbox-escape` | `allow-scripts` 와 `allow-same-origin` 동시 허용 |
+  | MEDIUM | supply-chain | `sri-missing` | 외부 리소스에 `integrity` 없음 |
+  | MEDIUM | supply-chain | `mixed-content` | HTTPS 페이지의 `http://` 하위 리소스 |
+  | MEDIUM | evasion | `obfuscated-eval` | `eval()` + 디코더(`atob` 등) 조합 |
+  | LOW | evasion | `zero-width` | 제로폭 문자 난독화 |
+  | LOW | hardening | `inline-handler` | 인라인 이벤트 핸들러 (`onclick` 등) |
+  | INFO | hardening | `target-blank-no-rel` | `target=_blank` 에 `rel=noopener` 없음 |
 
 
 
@@ -54,6 +54,9 @@ go build .
 # 최소 심각도로 거르기 · 통계 함께 보기
 ./suseong-html-analyzer -min medium page.html https://example.com/
 ./suseong-html-analyzer -stats page.html
+
+# 분류로 거르기
+./suseong-html-analyzer -class exfiltration page.html https://example.com/
 ```
 
 출력은 `파일:줄:칸: 심각도 [규칙] 근거` 형식이라 에디터에서 바로 점프할 수 있다.
