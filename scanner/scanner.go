@@ -73,9 +73,52 @@ func (s Severity) String() string {
 	return "?"
 }
 
+// Class 어떤 종류의 결함인지 나타냄.
+// 심각도와 독립적
+type Class int
+
+const (
+	ClassExfiltration Class = iota // 자격증명·데이터가 밖으로 나간다
+	ClassExecution                 // 공격자 코드가 실행된다
+	ClassOrigin                    // 출처·탐색이 탈취된다
+	ClassSupplyChain               // 외부 리소스의 무결성이 보장되지 않는다
+	ClassEvasion                   // 탐지·검토를 피하려는 흔적
+	ClassHardening                 // 취약점은 아니나 방어를 약하게 한다
+)
+
+func (c Class) String() string {
+	switch c {
+	case ClassExfiltration:
+		return "exfiltration"
+	case ClassExecution:
+		return "execution"
+	case ClassOrigin:
+		return "origin"
+	case ClassSupplyChain:
+		return "supply-chain"
+	case ClassEvasion:
+		return "evasion"
+	case ClassHardening:
+		return "hardening"
+	}
+	return "?"
+}
+
+// ParseClass(): "execution" 같은 이름을 Class 로 변환
+func ParseClass(name string) (Class, bool) {
+	for _, c := range []Class{ClassExfiltration, ClassExecution, ClassOrigin,
+		ClassSupplyChain, ClassEvasion, ClassHardening} {
+		if strings.EqualFold(strings.TrimSpace(name), c.String()) {
+			return c, true
+		}
+	}
+	return 0, false
+}
+
 // Finding 정의하고 []Finding 슬라이스 사용.
 type Finding struct {
 	Code     string
+	Class    Class
 	Title    string
 	Severity Severity
 	Offset   int    // Rule

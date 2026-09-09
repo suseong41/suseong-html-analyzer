@@ -42,7 +42,7 @@ func ruleFormActionIP(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil
 	}
 	return []Finding{{
-		Code: "form-action-ip", Title: "폼이 IP 주소로 직접 전송됨",
+		Code: "form-action-ip", Class: ClassExfiltration, Title: "폼이 IP 주소로 직접 전송됨",
 		Severity: High, Offset: tok.Offset, Evidence: "action=" + action,
 	}}
 }
@@ -92,7 +92,7 @@ func ruleDataURIDocument(ctx *Context, tok tokenizer.Token) []Finding {
 		for _, t := range excutableDataTypes {
 			if mime == t {
 				out = append(out, Finding{
-					Code: "data-uri-document", Title: "실행 가능한 data: URI 를 " + tok.Name + " 에 삽입",
+					Code: "data-uri-document", Class: ClassExecution, Title: "실행 가능한 data: URI 를 " + tok.Name + " 에 삽입",
 					Severity: High, Offset: a.Offset,
 					Evidence: "<" + tok.Name + " " + a.Name + "=data:" + mime + "…>",
 				})

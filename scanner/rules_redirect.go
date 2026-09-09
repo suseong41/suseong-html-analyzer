@@ -42,7 +42,7 @@ func ruleMetaRefreshScheme(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil
 	}
 	return []Finding{{
-		Code: "meta-refresh-scheme", Title: "meta refresh 가 " + scheme + " 로 이동",
+		Code: "meta-refresh-scheme", Class: ClassExecution, Title: "meta refresh 가 " + scheme + " 로 이동",
 		Severity: High, Offset: tok.Offset, Evidence: "content=" + content,
 	}}
 }
@@ -61,7 +61,7 @@ func ruleBaseHrefExternal(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil
 	}
 	return []Finding{{
-		Code: "base-href-external", Title: "<base href> 가 외부 도메인을 가리킴",
+		Code: "base-href-external", Class: ClassOrigin, Title: "<base href> 가 외부 도메인을 가리킴",
 		Severity: High, Offset: tok.Offset,
 		Evidence: ctx.Domain + " → " + d + "  (href=" + href + ")",
 	}}
@@ -90,7 +90,7 @@ func ruleIframeSandboxEscape(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil
 	}
 	return []Finding{{
-		Code: "iframe-sandbox-escape", Title: "sandbox 가 allow-scripts 와 allow-same-origin 을 함께 허용",
+		Code: "iframe-sandbox-escape", Class: ClassOrigin, Title: "sandbox 가 allow-scripts 와 allow-same-origin 을 함께 허용",
 		Severity: Medium, Offset: tok.Offset, Evidence: "sandbox=" + sb,
 	}}
 }

@@ -24,6 +24,7 @@ func usage() {
 func run() int {
 	flag.Usage = usage
 	minName := flag.String("min", "info", "최소 심각도 (info|low|medium|high)")
+	className := flag.String("class", "", "분류로 거르기 (exfiltration|execution|origin|supply-chain|evasion|hardening)")
 	showStats := flag.Bool("stats", false, "토큰·태그 통계도 출력")
 	flag.Parse()
 
@@ -37,6 +38,17 @@ func run() int {
 		return 2
 	}
 
+	var class scanner.Class
+	filterClass := *className != ""
+	if filterClass {
+		c, ok := scanner.ParseClass(*className)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "알 수 없는 분류: %q\n", *className)
+			return 2
+		}
+		class = c
+	}
+
 	path, pageURL := flag.Arg(0), flag.Arg(1)
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -48,16 +60,21 @@ func run() int {
 
 	var findings []scanner.Finding
 	for _, f := range res.Findings {
-		if min <= f.Severity {
-			findings = append(findings, f)
+		if f.Severity < min {
+			continue
 		}
+		if filterClass && f.Class != class {
+			continue
+		}
+		findings = append(findings, f)
 	}
 	sort.SliceStable(findings, func(i, j int) bool {
 		return findings[j].Severity < findings[i].Severity
 	})
 
 	for _, f := range findings {
-		fmt.Printf("%s:%d:%d: %-6s [%s] %s\n", path, f.Line, f.Col, f.Severity, f.Code, f.Evidence)
+		fmt.Printf("%s:%d:%d: %-6s %-13s [%s] %s\n",
+			path, f.Line, f.Col, f.Severity, f.Class, f.Code, f.Evidence)
 	}
 
 	if *showStats {

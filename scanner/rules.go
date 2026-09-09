@@ -37,7 +37,7 @@ func ruleInlineHandler(ctx *Context, tok tokenizer.Token) []Finding {
 	for _, a := range tok.Attrs {
 		if strings.HasPrefix(a.Name, "on") && 2 < len(a.Name) {
 			out = append(out, Finding{
-				Code:     "inline-handler",
+				Code: "inline-handler", Class: ClassHardening,
 				Title:    "인라인 이벤트 핸들러",
 				Severity: Low,
 				Offset:   a.Offset,
@@ -60,7 +60,7 @@ func ruleJavaScriptURL(ctx *Context, tok tokenizer.Token) []Finding {
 		}
 		if isDangerousJSURL(normalizeURL(a.Value)) {
 			out = append(out, Finding{
-				Code:     "javascript-url",
+				Code: "javascript-url", Class: ClassExecution,
 				Title:    "javascript: URL",
 				Severity: Medium,
 				Offset:   a.Offset,
@@ -92,7 +92,7 @@ func findZeroWidth(s string) (string, bool) {
 
 func zeroWidthFinding(name string, off int, where string) Finding {
 	return Finding{
-		Code:     "zero-width",
+		Code: "zero-width", Class: ClassEvasion,
 		Title:    "제로폭 문자 난독화",
 		Severity: Low,
 		Offset:   off,
@@ -135,7 +135,7 @@ func ruleCrossOriginPasswordForm(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil
 	}
 	return []Finding{{
-		Code:     "cross-origin-password-form",
+		Code: "cross-origin-password-form", Class: ClassExfiltration,
 		Title:    "비밀번호 폼이 외부 도메인으로 전송됨",
 		Severity: High,
 		Offset:   tok.Offset,

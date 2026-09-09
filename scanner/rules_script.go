@@ -60,7 +60,7 @@ func ruleWebShellSignature(ctx *Context, tok tokenizer.Token) []Finding {
 			continue
 		}
 		out = append(out, Finding{
-			Code: "webshell-signature", Title: "웹셸 시그니처: " + sig.name, Severity: High,
+			Code: "webshell-signature", Class: ClassExecution, Title: "웹셸 시그니처: " + sig.name, Severity: High,
 			Offset: tok.Offset + i, Evidence: excerpt(data, i, 48),
 		})
 	}
@@ -80,7 +80,7 @@ func ruleExfilChannel(ctx *Context, tok tokenizer.Token) []Finding {
 		for _, h := range exfilHosts {
 			if i := strings.Index(low, h); 0 <= i {
 				return []Finding{{
-					Code: "exfil-channel", Title: "스크립트가 외부 메시징 API 로 전송", Severity: High,
+					Code: "exfil-channel", Class: ClassExfiltration, Title: "스크립트가 외부 메시징 API 로 전송", Severity: High,
 					Offset: tok.Offset + i, Evidence: excerpt(data, i, 60),
 				}}
 			}
@@ -93,7 +93,7 @@ func ruleExfilChannel(ctx *Context, tok tokenizer.Token) []Finding {
 		for _, h := range exfilHosts {
 			if strings.Contains(low, h) {
 				return []Finding{{
-					Code: "exfil-channel", Title: "폼이 외부 메시징 API 로 전송됨", Severity: High,
+					Code: "exfil-channel", Class: ClassExfiltration, Title: "폼이 외부 메시징 API 로 전송됨", Severity: High,
 					Offset: tok.Offset, Evidence: "action=" + action,
 				}}
 			}
@@ -118,7 +118,7 @@ func ruleObfuscateEval(ctx *Context, tok tokenizer.Token) []Finding {
 	for _, d := range decoders {
 		if strings.Contains(low, d) {
 			return []Finding{{
-				Code: "obfuscated-eval", Title: "eval() 과 디코더 조합", Severity: Medium,
+				Code: "obfuscated-eval", Class: ClassEvasion, Title: "eval() 과 디코더 조합", Severity: Medium,
 				Offset: tok.Offset + at, Evidence: "eval( + " + strings.TrimSuffix(d, "("),
 			}}
 		}

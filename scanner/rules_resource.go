@@ -20,31 +20,6 @@ func isSubresource(tag, attr string) bool {
 	return false
 }
 
-func urlMixedContent(ctx *Context, tok tokenizer.Token) []Finding {
-	if tok.Type != tokenizer.StartTagToken {
-		return nil
-	}
-	var out []Finding
-	for _, a := range tok.Attrs {
-		if !isSubresource(tok.Name, a.Name) {
-			continue
-		}
-		if !strings.HasPrefix(normalizeURL(a.Value), "https://") {
-			continue
-		}
-		sev, title := Info, "평문 HTTP 리소스"
-		if ctx.Scheme == "https" {
-			sev, title = Medium, "혼합 콘텐츠 (HTTPS 페이지의 http:// 리소스)"
-		}
-		out = append(out, Finding{
-			Code: "mixed-content", Title: title, Severity: sev,
-			Offset:   a.Offset,
-			Evidence: "<" + tok.Name + " " + a.Name + "=" + a.Value + ">",
-		})
-	}
-	return out
-}
-
 func ruleSubresourceIntegrity(ctx *Context, tok tokenizer.Token) []Finding {
 	if tok.Type != tokenizer.StartTagToken {
 		return nil
@@ -73,7 +48,7 @@ func ruleSubresourceIntegrity(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil
 	}
 	return []Finding{{
-		Code: "sri-missing", Title: "외부 리소스에 integrity 없음", Severity: Medium,
+		Code: "sri-missing", Class: ClassSupplyChain, Title: "외부 리소스에 integrity 없음", Severity: Medium,
 		Offset: tok.Offset, Evidence: "<" + tok.Name + "> " + d,
 	}}
 }
@@ -95,7 +70,7 @@ func ruleMixedContent(ctx *Context, tok tokenizer.Token) []Finding {
 			sev, title = Medium, "혼합 콘텐츠 (HTTPS 페이지의 http:// 리소스)"
 		}
 		out = append(out, Finding{
-			Code: "mixed-content", Title: title, Severity: sev,
+			Code: "mixed-content", Class: ClassSupplyChain, Title: title, Severity: sev,
 			Offset:   a.Offset,
 			Evidence: "<" + tok.Name + " " + a.Name + "=" + a.Value + ">",
 		})
@@ -135,7 +110,7 @@ func (r *targetBlankRule) Finish(ctx *Context) []Finding {
 		return nil
 	}
 	return []Finding{{
-		Code: "target-blank-no-rel", Title: "target=_blank 에 rel=noopener 없음", Severity: Info,
+		Code: "target-blank-no-rel", Class: ClassHardening, Title: "target=_blank 에 rel=noopener 없음", Severity: Info,
 		Offset:   r.firstOff,
 		Evidence: fmt.Sprintf("%d곳 (첫 위치: %s). 2021년 이후 브라우저는 기본 차단", r.count, r.firstURL),
 	}}
