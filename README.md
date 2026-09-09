@@ -16,7 +16,11 @@ WHATWG 토크나이저(브라우저와 동일하게 해석)를 만들고, 그 �
 
 * **파싱** — `<script>`/`<style>` 원시 텍스트, 문자 참조 디코딩, 주석·DOCTYPE,
   script escaped state, 열린 요소 스택까지 브라우저와 동일하게 처리
-* **탐지 규칙 10종** (심각도별)
+* **출처 판정** — 등록 가능한 도메인(eTLD+1) 기준.
+  `static.example.com` 은 `www.example.com` 페이지에서 외부가 아니다
+* **집계** — 같은 원인은 한 줄로 묶는다.
+  CDN 한 곳에서 스크립트 30개를 불러도 조치는 하나이므로 `(30곳)` 으로 보고한다
+* **탐지 규칙 21종** (심각도 · 분류별)
 
   | 심각도 | 분류 | 규칙 | 내용 |
   |---|---|---|---|
@@ -65,10 +69,11 @@ go build .
 ./suseong-html-analyzer -class exfiltration page.html https://example.com/
 ```
 
-출력은 `파일:줄:칸: 심각도 [규칙] 근거` 형식이라 에디터에서 바로 점프할 수 있다.
+출력은 `파일:줄:칸: 심각도 분류 [규칙] 근거` 형식이라 에디터에서 바로 점프할 수 있다.
 
 ```
-page.html:12:8: HIGH   [exfil-channel] action=https://api.telegram.org/...
+page.html:6:1:  HIGH   exfiltration [exfil-channel]  action=https://api.telegram.org/bot123/sendMessage
+page.html:16:5: MEDIUM supply-chain [sri-missing]    c.example-cdn.com (3곳)
 ```
 발견과 별개로 **분석의 한계**를 stderr 에 보고한다.
 SPA 셸처럼 내용을 스크립트가 그리는 페이지가 그렇다.
@@ -90,3 +95,23 @@ go vet ./...
 # 퍼징 (파서·규칙의 크래시/무한루프 탐색)
 go test ./tokenizer -run '^$' -fuzz FuzzTokenizer -fuzztime 1m
 ```
+
+#### 회귀 코퍼스
+
+`testdata/corpus/` 에 실제 웹에서 받은 **정상 페이지 12쪽**이 있다.
+`scanner/corpus_test.go` 가 두 방향으로 단언한다.
+
+| | 정상 12쪽 | `malicious_sample.html` |
+|---|---|---|
+| 잡는 것 | **오탐** — 정상인데 HIGH | **미탐** — 악성인데 조용함 |
+| 단언 | `HIGH == 0` | `HIGH >= 3` |
+
+한쪽만으로는 속일 수 있다. 오탐 단언만 있으면 *아무것도 찾지 않는 스캐너*가,
+미탐 단언만 있으면 *전부 HIGH 로 찍는 스캐너*가 만점을 받는다.
+
+```sh
+go test ./scanner -run Corpus -v      # 페이지마다 서브테스트로 갈라진다
+```
+
+규칙을 고쳐 총 발견 수가 바뀌면 테스트가 실패한다. **의도한 변경이면 표를 갱신하고,
+아니라면 방금 오탐을 만든 것이다.**

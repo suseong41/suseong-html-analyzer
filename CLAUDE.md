@@ -50,6 +50,7 @@ tokenizer/     ① WHATWG 토크나이저 (브라우저와 동일하게 해석)
 scanner/       규칙 계층 — scanner.go(엔진) + rules_*.go(규칙)
 old_c_files/   Go 전환 전 C++ 원본 (참조용, 수정하지 않음)
 testdata/      jnu_main.html(정상) · malicious_sample.html(합성 악성) · spa_shell.html
+               corpus/  실제 웹에서 curl 로 받은 정상 페이지 11쪽 (회귀 기준)
 ```
 
 전신 프로젝트 두 개가 `../HtmlScanner`(C++ 13,838줄, 탐지 97종)와 `old_c_files/` 에 있다.
@@ -104,7 +105,7 @@ SPA 셸, WAF 차단 페이지가 여기 해당한다. 원본은 SPA에 `+12점` 
 3. **음성 케이스를 먼저 쓴다** — "정상 페이지에서 안 나오는가"
 4. 양성 케이스를 쓴다
 5. 구현한다
-6. **`testdata/jnu_main.html` 탐지 수가 늘지 않는지 확인한다** — 늘면 오탐
+6. **`go test ./scanner -run Corpus` 로 정상 12쪽 회귀를 확인한다** — 수가 늘면 오탐
 
 2번으로 실제로 버린 규칙들: iframe sandbox 누락(GTM 정상 iframe), 스킴리스 URL(정상 2건),
 `data:` 길이 임계값, form action 미지정.
@@ -116,16 +117,23 @@ SPA 셸, WAF 차단 페이지가 여기 해당한다. 원본은 SPA에 `+12점` 
 ```bash
 go build ./...          # _test.go 는 컴파일하지 않는다
 go vet ./...            # 컴파일러가 안 잡는 것 (도달 불가 코드 등)
-go test ./...           # 307개
+go test ./...           # 333개 (서브테스트 포함) · 최상위 함수 51개
 gofmt -l .              # 출력이 있으면 실패
 
 # 퍼징 — 큰 변경 뒤에는 길게
 go test ./tokenizer -run '^$' -fuzz FuzzTokenizer -fuzztime 5m
 go test ./scanner   -run '^$' -fuzz FuzzScan      -fuzztime 5m
 
-# 회귀 — 세 샘플의 탐지 수가 바뀌면 안 된다
-./suseong-html-analyzer testdata/jnu_main.html https://www.jnu.ac.kr/        # 8건
-./suseong-html-analyzer testdata/malicious_sample.html https://bank.example.com/  # 5건
+# 회귀 — 이제 테스트가 자동으로 잡는다 (손으로 돌릴 필요 없음)
+go test ./scanner -run 'Corpus|Malicious' -v
+
+#   TestCorpusNoFalsePositive   정상 12쪽 · HIGH == 0 · 총 26건
+#   TestMaliciousSampleDetected 악성 1쪽 · HIGH >= 3 · 총 5건
+# 두 방향을 같이 걸어야 한다. 한쪽만이면 "아무것도 안 찾는 스캐너"가 만점을 받는다.
+
+# 눈으로 볼 때
+./suseong-html-analyzer testdata/jnu_main.html https://www.jnu.ac.kr/        # 4건
+./suseong-html-analyzer testdata/malicious_sample.html https://bank.example.com/  # 5건 (HIGH 3)
 ./suseong-html-analyzer testdata/spa_shell.html https://app.example.com/     # 0건 + 참고 1
 ```
 
@@ -139,6 +147,8 @@ go test ./scanner   -run '^$' -fuzz FuzzScan      -fuzztime 5m
 | 30초 지정했는데 0.3초에 끝남 | 퍼즈 대상 이름이 틀렸다 (`no fuzz tests to fuzz`) |
 | 로컬은 되는데 CI만 실패 | 파일이 커밋되지 않았다 (러너는 git에서 clone) |
 | 발견이 2배 | `newRules()` 에 규칙이 중복 등록됐다 |
+| **같은 줄 번호에서 에러가 여러 번, 값이 1씩 커진다** | 판정이 집계 루프 **안**에 있다 |
+| 정상 페이지에서 HIGH | 규칙이 틀렸다. `TestCorpusNoFalsePositive` 가 잡는다 |
 
 **도구가 못 잡은 실제 결함들** — 테스트가 유일한 방어선이었다:
 `!` 누락(무한 루프) · `s = s`(자기 대입) · `" atob("` 앞 공백 하나 ·
@@ -152,19 +162,24 @@ go test ./scanner   -run '^$' -fuzz FuzzScan      -fuzztime 5m
 ## 7. 현재 상태 · 다음 할 일
 
 ```
-규칙 21종 · 테스트 307개 · 코드 3,478줄 · 퍼징 5,600만 케이스 무결
+규칙 21종 · 테스트 333개 · 코드 2,145줄 + 테스트 1,590줄 · 퍼징 5,600만 케이스 무결
 원본 97개 항목 이식 완료 (이식 18 · 조합 재료 3 · 버림 76)
+정상 코퍼스 12쪽: 458건 → 26건 (오탐 41 + 중복 391) · HIGH 0건
 ```
+
+**26·27교시에 한 일** — eTLD+1 출처 판정(`scanner/domain.go`) · 호스트별 집계 ·
+정상 페이지 코퍼스 12쪽 · `corpus_test.go` 로 회귀 고정.
 
 ### 다음 (우선순위 순)
 
-1. **정상 페이지 코퍼스** — 가장 시급.
-   회귀 기준이 `jnu_main.html` **하나뿐**인데 규칙은 21종이다.
-   사용자 계획: 웹 서버 접속 시 `curl` 로 받은 HTML을 샘플로 축적.
-   `scanner/corpus_test.go` 에 `maxHigh: 0`(정상 페이지에 HIGH 금지) 단언을 둔다.
+1. **악성 표본** — 가장 시급.
+   오탐은 12쪽이 지키는데 **미탐을 지키는 건 합성 샘플 1개**다.
+   지금 규칙을 하나 망가뜨려도 정상 페이지 테스트는 전부 통과한다
+   — 조용해지는 것은 오탐 단언을 **통과시키는** 방향이기 때문이다.
 2. `<input form="id">` 원격 연결 — 스택으로는 불가, 트리 + id 인덱스 필요
 3. 전체 트리 구성 — foster parenting, 삽입 모드 23개
 4. punycode 호스트 — 정상 IDN과 구별하려면 혼합 스크립트 판정 필요
+5. eTLD+1 접미사 표 확장 — 24개만 내장. 표에 없으면 마지막 두 라벨로 떨어져 **미탐 방향**
 
 ### 문서 갱신 규칙
 
