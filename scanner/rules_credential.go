@@ -81,3 +81,53 @@ func mustAttr(tok tokenizer.Token, name string) string {
 	v, _ := tok.Attr(name)
 	return v
 }
+
+// phishingFlagPage(): CDN이 대상을 피싱으로 분류한 것을 보고 경고로 출력
+type phishingFlagPage struct{ inter interstitial }
+
+func (r *phishingFlagPage) Check(ctx *Context, tok tokenizer.Token) []Finding {
+	r.inter.observe(ctx, tok)
+	return nil
+}
+
+func (r *phishingFlagPage) Finish(ctx *Context) []Finding {
+	if !r.inter.phishingFlagged() {
+		return nil
+	}
+	return []Finding{{
+		Code: "phishing-interstitial", Class: ClassExfiltration,
+		Title:    "Cloudflare 가 대상을 피싱으로 분류함",
+		Severity: High, Offset: 0,
+		Evidence: "제3자(Cloudflare) 판정 — 이 HTML 은 경고 페이지다",
+	}}
+}
+
+// 자격증명을 로컬 주소로 보내는 폼. 공격은 아니니 MEDIUM
+var localHotst = []string{"localhost", "127.0.0.1", "0.0.0.0", "[::1]", "::1"}
+
+func ruleLocalCredentialPost(ctx *Context, tok tokenizer.Token) []Finding {
+	form, ok := credentialForm(ctx, tok)
+	if !ok {
+		return nil
+	}
+	action, _ := form.Attr("action")
+	v := normalizeURL(action)
+	if strings.HasPrefix(v, "file://") {
+		return []Finding{{
+			Code: "local-credential-post", Class: ClassHardening,
+			Title:    "비밀번호 폼이 로컬 주소로 전송됨",
+			Severity: Medium, Offset: tok.Offset, Evidence: "action=" + action,
+		}}
+	}
+	host := absoluteHost(action)
+	for _, h := range localHotst {
+		if host == h {
+			return []Finding{{
+				Code: "local-credential-post", Class: ClassHardening,
+				Title:    "비밀번호 폼이 로컬 주소로 전송됨",
+				Severity: Medium, Offset: tok.Offset, Evidence: "action=" + action,
+			}}
+		}
+	}
+	return nil
+}

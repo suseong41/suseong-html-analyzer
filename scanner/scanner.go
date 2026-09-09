@@ -60,6 +60,8 @@ func newRules() []Rule {
 		ruleFunc(ruleResourceIPLiteral),
 		ruleFunc(ruleClearTextCredentials),
 		ruleFunc(ruleWeakPasswordField),
+		ruleFunc(ruleLocalCredentialPost),
+		&phishingFlagPage{},
 	}
 }
 

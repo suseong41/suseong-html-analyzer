@@ -12,9 +12,12 @@ import (
 type coverage struct {
 	visibleText int
 	scripts     int
+	inter       interstitial
 }
 
 func (c *coverage) observe(ctx *Context, tok tokenizer.Token) {
+	c.inter.observe(ctx, tok)
+
 	switch tok.Type {
 	case tokenizer.StartTagToken:
 		if tok.Name == "script" {
@@ -30,6 +33,9 @@ func (c *coverage) observe(ctx *Context, tok tokenizer.Token) {
 }
 
 func (c *coverage) notes() []string {
+	if n := c.inter.notes(); n != nil {
+		return n // 대상 페이지가 아니면 SPA 판정 의미 없음
+	}
 	if c.scripts == 0 || 0 < c.visibleText {
 		return nil
 	}
