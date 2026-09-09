@@ -20,7 +20,10 @@ func isSubresource(tag, attr string) bool {
 	return false
 }
 
-func ruleSubresourceIntegrity(ctx *Context, tok tokenizer.Token) []Finding {
+// sriRule은 integrity 없는 외부 리소스를 호스트별로 묶어 보고
+type sriRule struct{ agg aggregator }
+
+func (r *sriRule) Check(ctx *Context, tok tokenizer.Token) []Finding {
 	if tok.Type != tokenizer.StartTagToken {
 		return nil
 	}
@@ -41,16 +44,31 @@ func ruleSubresourceIntegrity(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil // inline
 	}
 	d := absoluteHost(url)
-	if d == "" || d == ctx.Domain {
-		return nil // 자기 도메인
+	if d == "" || isSameOrg(d, ctx.Domain) {
+		return nil // 같은 조직
 	}
 	if _, ok := tok.Attr("integrity"); ok {
 		return nil
 	}
-	return []Finding{{
-		Code: "sri-missing", Class: ClassSupplyChain, Title: "외부 리소스에 integrity 없음", Severity: Medium,
-		Offset: tok.Offset, Evidence: "<" + tok.Name + "> " + d,
-	}}
+	r.agg.add(d, "<"+tok.Name+"> "+d, tok.Offset)
+	return nil
+}
+
+func (r *sriRule) Finish(ctx *Context) []Finding {
+	var out []Finding
+	for _, host := range r.agg.keys {
+		it := r.agg.items[host]
+		ev := it.first
+		if 1 < it.count {
+			ev = fmt.Sprintf("%s (%d곳)", host, it.count)
+		}
+		out = append(out, Finding{
+			Code: "sri-missing", Class: ClassSupplyChain,
+			Title: "외부 리소스에 integrity 없음", Severity: Medium,
+			Offset: it.firstOff, Evidence: ev,
+		})
+	}
+	return out
 }
 
 func ruleMixedContent(ctx *Context, tok tokenizer.Token) []Finding {

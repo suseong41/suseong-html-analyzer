@@ -57,7 +57,7 @@ func ruleBaseHrefExternal(ctx *Context, tok tokenizer.Token) []Finding {
 		return nil
 	}
 	d := absoluteHost(href)
-	if d == "" || d == ctx.Domain {
+	if d == "" || isSameOrg(d, ctx.Domain) {
 		return nil
 	}
 	return []Finding{{

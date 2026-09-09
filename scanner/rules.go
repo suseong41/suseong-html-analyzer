@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/suseong41/suseong-html-analyzer/tokenizer"
@@ -28,24 +29,35 @@ func isDangerousJSURL(v string) bool {
 	return body != "" && body != "void(0)"
 }
 
-func ruleInlineHandler(ctx *Context, tok tokenizer.Token) []Finding {
+// inlineHandlerRule(): 인라인 이벤트 핸들러를 한 건으로 묶음.
+type inlineHandlerRule struct{ agg aggregator }
+
+func (r *inlineHandlerRule) Check(ctx *Context, tok tokenizer.Token) []Finding {
 	if tok.Type != tokenizer.StartTagToken {
 		return nil
 	}
-
-	var out []Finding
 	for _, a := range tok.Attrs {
 		if strings.HasPrefix(a.Name, "on") && 2 < len(a.Name) {
-			out = append(out, Finding{
-				Code: "inline-handler", Class: ClassHardening,
-				Title:    "인라인 이벤트 핸들러",
-				Severity: Low,
-				Offset:   a.Offset,
-				Evidence: "<" + tok.Name + " " + a.Name + "=…>",
-			})
+			r.agg.add("*", "<"+tok.Name+" "+a.Name+"=…>", a.Offset)
 		}
 	}
-	return out
+	return nil
+}
+
+func (r *inlineHandlerRule) Finish(ctx *Context) []Finding {
+	it := r.agg.items["*"]
+	if it == nil {
+		return nil
+	}
+	ev := it.first
+	if 1 < it.count {
+		ev = fmt.Sprintf("%d곳 (첫 위치: %s)", it.count, it.first)
+	}
+	return []Finding{{
+		Code: "inline-handler", Class: ClassHardening,
+		Title: "인라인 이벤트 핸들러", Severity: Low,
+		Offset: it.firstOff, Evidence: ev,
+	}}
 }
 
 func ruleJavaScriptURL(ctx *Context, tok tokenizer.Token) []Finding {
@@ -125,7 +137,7 @@ func ruleCrossOriginPasswordForm(ctx *Context, tok tokenizer.Token) []Finding {
 	}
 	action, _ := form.Attr("action")
 	d := absoluteHost(action)
-	if d == "" || d == ctx.Domain {
+	if d == "" || isSameOrg(d, ctx.Domain) {
 		return nil
 	}
 	return []Finding{{

@@ -41,12 +41,12 @@ const (
 // newRules(): 스캔마다 새 규칙 집합 생성.
 func newRules() []Rule {
 	return []Rule{
-		ruleFunc(ruleInlineHandler),
+		&inlineHandlerRule{},
 		ruleFunc(ruleJavaScriptURL),
 		ruleFunc(ruleZeroWidth),
 		ruleFunc(ruleCrossOriginPasswordForm),
 		ruleFunc(ruleMixedContent),
-		ruleFunc(ruleSubresourceIntegrity),
+		&sriRule{},
 		&targetBlankRule{},
 		ruleFunc(ruleWebShellSignature),
 		ruleFunc(ruleExfilChannel),
